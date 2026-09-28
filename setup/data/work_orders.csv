@@ -1,0 +1,7 @@
+wo_id,machine_id,created_date,due_date,completed_date,wo_type,priority,status,description,assigned_to,estimated_cost_usd,actual_cost_usd
+WO-001,M-302,2025-07-10 08:00:00,2025-07-15 17:00:00,2025-07-15 16:00:00,corrective,high,completed,Bearing replacement - age-based replacement,J. Martinez,2200.0,2450.0
+WO-002,M-303,2026-01-08 07:00:00,2026-01-09 17:00:00,2026-01-10 16:00:00,emergency,critical,completed,Emergency bearing replacement after seizure,J. Martinez,3500.0,4800.0
+WO-003,M-201,2025-11-12 10:30:00,2025-11-13 17:00:00,2025-11-12 14:00:00,corrective,high,completed,Hydraulic seal replacement,R. Chen,1000.0,1200.0
+WO-004,M-401,2026-09-20 08:00:00,2026-10-01 17:00:00,,preventive,medium,open,Scheduled joint recalibration Q4,T. Nakamura,350.0,
+WO-005,M-502,2026-09-22 08:00:00,2026-10-05 17:00:00,,preventive,low,open,Turret alignment - routine,A. Singh,200.0,
+WO-006,M-302,2026-09-25 12:00:00,2026-09-26 17:00:00,,emergency,critical,in_progress,Emergency bearing inspection - OpsMind AI recommendation approved,J. Martinez,2800.0,

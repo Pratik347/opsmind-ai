@@ -1,0 +1,12 @@
+machine_id,line_id,machine_name,machine_type,manufacturer,model,install_date,last_overhaul_date,status,criticality_rating
+M-101,LINE-101,CNC Mill #1,CNC Milling Center,Haas Automation,VF-4SS,2020-03-15,2024-06-10,operational,4
+M-102,LINE-101,CNC Mill #2,CNC Milling Center,Haas Automation,VF-4SS,2020-03-15,2024-06-10,operational,4
+M-201,LINE-201,Hydraulic Press A,Hydraulic Press,Schuler Group,MSD-400,2019-07-22,2023-11-05,operational,5
+M-202,LINE-201,Hydraulic Press B,Hydraulic Press,Schuler Group,MSD-400,2019-07-22,2023-11-05,operational,5
+M-301,LINE-301,CNC Finishing Mill #1,CNC Milling Center,DMG Mori,CMX-70U,2021-01-10,2025-02-20,operational,4
+M-302,LINE-301,CNC Finishing Mill #2,CNC Milling Center,DMG Mori,CMX-70U,2021-01-10,2025-07-15,operational,4
+M-303,LINE-301,CNC Finishing Mill #3,CNC Milling Center,DMG Mori,CMX-70U,2021-06-01,2025-02-20,operational,4
+M-401,LINE-401,Assembly Robot #1,Assembly Robot,FANUC,M-20iD/25,2022-04-01,2025-04-01,operational,3
+M-402,LINE-401,Assembly Robot #2,Assembly Robot,FANUC,M-20iD/25,2022-04-01,2025-04-01,operational,3
+M-501,LINE-501,CNC Lathe #1,CNC Lathe,Mazak,QT-250MSY,2021-09-15,2025-01-10,operational,4
+M-502,LINE-501,CNC Lathe #2,CNC Lathe,Mazak,QT-250MSY,2021-09-15,2025-01-10,operational,4

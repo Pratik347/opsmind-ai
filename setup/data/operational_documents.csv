@@ -1,0 +1,5 @@
+doc_id,plant_id,doc_type,title,content,applicable_machine_types,applicable_components,last_updated,version
+DOC-001,PLT-001,sop,Bearing Inspection Standard Operating Procedure,See setup/data/documents/bearing_inspection_sop.md,"CNC Milling Center,CNC Lathe","bearing,spindle_bearing",2026-06-15 00:00:00,3.1
+DOC-002,PLT-001,manual,Vibration Analysis and Threshold Guidelines,See setup/data/documents/vibration_threshold_guide.md,"CNC Milling Center,CNC Lathe,Hydraulic Press","bearing,spindle,motor",2026-05-20 00:00:00,2.4
+DOC-003,PLT-001,sop,Preventive Maintenance Schedule and Procedures,See setup/data/documents/preventive_maintenance_procedure.md,"CNC Milling Center,CNC Lathe,Hydraulic Press,Assembly Robot","bearing,spindle,seals,motor,coolant_system",2026-07-01 00:00:00,4.0
+DOC-004,PLT-001,troubleshooting_guide,CNC Milling Center Troubleshooting Guide,See setup/data/documents/cnc_troubleshooting_guide.md,CNC Milling Center,"bearing,spindle,coolant_system,tool_holder,motor",2026-04-10 00:00:00,2.2

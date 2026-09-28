@@ -1,0 +1,2 @@
+action_id,approval_id,wo_id,executed_at,action_type,description,executed_by,result
+ACT-001,APR-001,WO-006,2026-09-25 12:00:00,work_order_created,"Emergency bearing inspection work order created for M-302, scheduled Sep 26 day shift",OpsMind AI System,Work order WO-006 created and assigned to J. Martinez

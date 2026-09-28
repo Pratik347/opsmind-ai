@@ -1,0 +1,6 @@
+failure_id,machine_id,failure_start,failure_end,failure_mode,root_cause,severity,downtime_minutes,repair_cost_usd,corrective_action
+FLR-001,M-303,2026-01-08 06:30:00,2026-01-10 16:00:00,bearing_failure,Bearing seizure - spindle bearing,critical,960,4800.0,Emergency bearing replacement and spindle inspection
+FLR-002,M-303,2026-01-05 14:00:00,2026-01-05 14:30:00,vibration_exceedance,Elevated vibration detected during routine monitoring,minor,30,150.0,"Vibration check scheduled, machine kept running"
+FLR-003,M-201,2025-11-12 10:00:00,2025-11-12 14:00:00,seal_leak,Hydraulic seal degradation,major,240,1200.0,Seal replacement and hydraulic line inspection
+FLR-004,M-101,2025-09-05 22:00:00,2025-09-06 06:00:00,tool_breakage,Tool holder failure during night shift,minor,480,650.0,"Tool holder replaced, root cause: material defect"
+FLR-005,M-501,2026-04-18 08:00:00,2026-04-18 11:00:00,coolant_failure,Coolant pump failure,minor,180,420.0,Pump motor replacement

@@ -1,0 +1,19 @@
+maintenance_id,machine_id,scheduled_date,completed_date,maintenance_type,description,component,technician,status,cost_usd
+MNT-001,M-302,2025-07-15 08:00:00,2025-07-15 16:00:00,corrective,Spindle bearing replacement - scheduled replacement due to age,bearing,J. Martinez,completed,2450.0
+MNT-002,M-302,2026-03-10 08:00:00,2026-03-10 12:00:00,preventive,Bearing inspection and lubrication,bearing,J. Martinez,completed,320.0
+MNT-003,M-302,2026-09-10 08:00:00,,preventive,Bearing inspection - 6-month scheduled check,bearing,,overdue,
+MNT-004,M-302,2026-08-15 08:00:00,2026-08-15 10:00:00,preventive,Coolant system flush and filter replacement,coolant_system,A. Singh,completed,180.0
+MNT-005,M-302,2026-06-20 08:00:00,2026-06-20 14:00:00,preventive,Annual spindle alignment check,spindle,J. Martinez,completed,450.0
+MNT-010,M-301,2025-08-20 08:00:00,2025-08-20 14:00:00,preventive,Bearing inspection and lubrication,bearing,K. Thompson,completed,300.0
+MNT-011,M-301,2026-02-15 08:00:00,2026-02-15 12:00:00,preventive,Bearing inspection and lubrication,bearing,K. Thompson,completed,310.0
+MNT-012,M-301,2026-08-18 08:00:00,2026-08-18 12:00:00,preventive,Bearing inspection and lubrication,bearing,K. Thompson,completed,305.0
+MNT-013,M-301,2026-07-10 08:00:00,2026-07-10 10:00:00,preventive,Coolant system flush,coolant_system,A. Singh,completed,175.0
+MNT-020,M-303,2026-01-08 08:00:00,2026-01-10 16:00:00,corrective,Emergency bearing replacement after failure,bearing,J. Martinez,completed,4800.0
+MNT-021,M-303,2026-01-06 08:00:00,,inspection,Vibration check requested - elevated readings,bearing,,completed,150.0
+MNT-022,M-303,2026-07-10 08:00:00,2026-07-10 12:00:00,preventive,Bearing inspection post-replacement,bearing,K. Thompson,completed,280.0
+MNT-030,M-201,2026-08-01 08:00:00,2026-08-01 12:00:00,preventive,Hydraulic seal inspection,seals,R. Chen,completed,520.0
+MNT-031,M-201,2026-06-15 08:00:00,2026-06-15 10:00:00,preventive,Hydraulic fluid replacement,hydraulic_system,R. Chen,completed,380.0
+MNT-032,M-401,2026-07-20 08:00:00,2026-07-20 10:00:00,preventive,Joint calibration and lubrication,joints,T. Nakamura,completed,210.0
+MNT-033,M-501,2026-08-05 08:00:00,2026-08-05 14:00:00,preventive,Spindle bearing inspection,bearing,K. Thompson,completed,290.0
+MNT-034,M-102,2026-07-25 08:00:00,2026-07-25 12:00:00,preventive,Bearing inspection and lubrication,bearing,J. Martinez,completed,310.0
+MNT-035,M-502,2026-06-30 08:00:00,2026-06-30 10:00:00,preventive,Tool turret alignment,turret,A. Singh,completed,190.0

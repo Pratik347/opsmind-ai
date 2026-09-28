@@ -1,0 +1,10 @@
+audit_id,entity_type,entity_id,event_ts,event_type,actor,details
+AUD-001,anomaly_signal,ANM-001,2026-09-18 14:15:00,created,OpsMind AI System,"Vibration anomaly detected on M-302, severity: warning"
+AUD-002,anomaly_signal,ANM-002,2026-09-19 06:30:00,created,OpsMind AI System,"Thermal anomaly detected on M-302, severity: warning"
+AUD-003,anomaly_signal,ANM-003,2026-09-23 08:00:00,created,OpsMind AI System,"OEE decline anomaly detected on M-302, severity: critical"
+AUD-004,anomaly_signal,ANM-004,2026-09-24 14:30:00,created,OpsMind AI System,Critical vibration threshold exceeded on M-302
+AUD-005,anomaly_signal,ANM-005,2026-09-25 06:00:00,created,OpsMind AI System,Critical bearing temperature on M-302 approaching shutdown threshold
+AUD-006,recommendation,REC-001,2026-09-25 09:00:00,created,OpsMind AI System,Emergency bearing inspection recommended for M-302
+AUD-007,recommendation,REC-001,2026-09-25 11:30:00,approved,Sarah Chen - Plant Manager,Recommendation approved for immediate action
+AUD-008,work_order,WO-006,2026-09-25 12:00:00,created,OpsMind AI System,Emergency work order created for M-302 bearing inspection
+AUD-009,executed_action,ACT-001,2026-09-25 12:00:00,executed,OpsMind AI System,Work order WO-006 created and assigned to J. Martinez

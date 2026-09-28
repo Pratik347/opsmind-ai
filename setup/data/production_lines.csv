@@ -1,0 +1,6 @@
+line_id,plant_id,line_name,product_type,design_capacity_units_hr
+LINE-101,PLT-001,Precision Machining Line A,Machined Components,120
+LINE-201,PLT-001,Hydraulic Press Line,Formed Parts,80
+LINE-301,PLT-001,CNC Finishing Line,Finished Assemblies,100
+LINE-401,PLT-002,Assembly Line Alpha,Electronic Assemblies,200
+LINE-501,PLT-003,CNC Turning Line,Turned Components,90

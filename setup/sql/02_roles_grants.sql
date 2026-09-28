@@ -1,0 +1,99 @@
+-- ============================================================
+-- OpsMind AI — 02_roles_grants.sql
+-- Role model and privilege grants
+-- ============================================================
+-- Ownership model:
+--   ACCOUNTADMIN retains ownership of all OPSMIND objects.
+--   Custom roles receive USAGE/SELECT/INSERT/UPDATE as needed.
+--   Production hardening recommendation: transfer OWNERSHIP of
+--   OPSMIND database and schemas to OPSMIND_ADMIN, then revoke
+--   direct ACCOUNTADMIN usage except through role hierarchy.
+-- ============================================================
+
+-- Roles
+CREATE ROLE IF NOT EXISTS OPSMIND_ADMIN
+    COMMENT = 'OpsMind deployment and configuration';
+
+CREATE ROLE IF NOT EXISTS OPSMIND_ANALYST
+    COMMENT = 'OpsMind investigation — read evidence for analysis';
+
+CREATE ROLE IF NOT EXISTS OPSMIND_OPERATOR
+    COMMENT = 'OpsMind analyst + operational approval/action';
+
+-- Role hierarchy: OPERATOR inherits ANALYST
+GRANT ROLE OPSMIND_ANALYST TO ROLE OPSMIND_OPERATOR;
+
+-- Grant all OpsMind roles to ACCOUNTADMIN for hackathon use
+GRANT ROLE OPSMIND_ADMIN TO ROLE ACCOUNTADMIN;
+GRANT ROLE OPSMIND_OPERATOR TO ROLE ACCOUNTADMIN;
+
+-- ============================================================
+-- OPSMIND_ADMIN — administrative privileges within OPSMIND
+-- Does NOT receive OWNERSHIP (ACCOUNTADMIN retains it).
+-- ============================================================
+GRANT USAGE ON DATABASE OPSMIND TO ROLE OPSMIND_ADMIN;
+GRANT USAGE ON ALL SCHEMAS IN DATABASE OPSMIND TO ROLE OPSMIND_ADMIN;
+
+GRANT USAGE ON WAREHOUSE OPSMIND_WH TO ROLE OPSMIND_ADMIN;
+GRANT OPERATE ON WAREHOUSE OPSMIND_WH TO ROLE OPSMIND_ADMIN;
+
+-- ADMIN: create objects in all schemas
+GRANT CREATE TABLE ON ALL SCHEMAS IN DATABASE OPSMIND TO ROLE OPSMIND_ADMIN;
+GRANT CREATE VIEW ON ALL SCHEMAS IN DATABASE OPSMIND TO ROLE OPSMIND_ADMIN;
+GRANT CREATE STAGE ON SCHEMA OPSMIND.RAW TO ROLE OPSMIND_ADMIN;
+GRANT CREATE FILE FORMAT ON SCHEMA OPSMIND.RAW TO ROLE OPSMIND_ADMIN;
+
+-- ADMIN: read/write all tables for deployment and data loading
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA OPSMIND.RAW TO ROLE OPSMIND_ADMIN;
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA OPSMIND.CORE TO ROLE OPSMIND_ADMIN;
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA OPSMIND.KNOWLEDGE TO ROLE OPSMIND_ADMIN;
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA OPSMIND.AI TO ROLE OPSMIND_ADMIN;
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA OPSMIND.GOVERNANCE TO ROLE OPSMIND_ADMIN;
+
+-- ADMIN: stage usage for data loading
+GRANT READ, WRITE ON STAGE OPSMIND.RAW.SEED_DATA_STAGE TO ROLE OPSMIND_ADMIN;
+
+-- ============================================================
+-- OPSMIND_ANALYST — read investigation/evidence data
+-- Access: CORE, KNOWLEDGE, AI only. NO GOVERNANCE, NO APP.
+-- ============================================================
+GRANT USAGE ON DATABASE OPSMIND TO ROLE OPSMIND_ANALYST;
+GRANT USAGE ON WAREHOUSE OPSMIND_WH TO ROLE OPSMIND_ANALYST;
+
+-- CORE: full read access to all investigation input tables
+GRANT USAGE ON SCHEMA OPSMIND.CORE TO ROLE OPSMIND_ANALYST;
+GRANT SELECT ON ALL TABLES IN SCHEMA OPSMIND.CORE TO ROLE OPSMIND_ANALYST;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA OPSMIND.CORE TO ROLE OPSMIND_ANALYST;
+
+-- KNOWLEDGE: read access for document retrieval (Cortex Search)
+GRANT USAGE ON SCHEMA OPSMIND.KNOWLEDGE TO ROLE OPSMIND_ANALYST;
+GRANT SELECT ON ALL TABLES IN SCHEMA OPSMIND.KNOWLEDGE TO ROLE OPSMIND_ANALYST;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA OPSMIND.KNOWLEDGE TO ROLE OPSMIND_ANALYST;
+
+-- AI: read access to anomaly signals (system-generated investigation context)
+GRANT USAGE ON SCHEMA OPSMIND.AI TO ROLE OPSMIND_ANALYST;
+GRANT SELECT ON ALL TABLES IN SCHEMA OPSMIND.AI TO ROLE OPSMIND_ANALYST;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA OPSMIND.AI TO ROLE OPSMIND_ANALYST;
+
+-- ANALYST does NOT receive access to:
+--   OPSMIND.GOVERNANCE (approval/action data is operator-only)
+--   OPSMIND.APP (application objects granted separately when created)
+
+-- ============================================================
+-- OPSMIND_OPERATOR — analyst capabilities + governance workflows
+-- Inherits all ANALYST privileges via role hierarchy.
+-- Additional: read + write narrowly scoped to GOVERNANCE tables.
+-- ============================================================
+
+-- GOVERNANCE: read existing decisions/actions + write new ones
+GRANT USAGE ON SCHEMA OPSMIND.GOVERNANCE TO ROLE OPSMIND_OPERATOR;
+GRANT SELECT ON ALL TABLES IN SCHEMA OPSMIND.GOVERNANCE TO ROLE OPSMIND_OPERATOR;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA OPSMIND.GOVERNANCE TO ROLE OPSMIND_OPERATOR;
+
+-- OPERATOR: insert approvals, actions, and audit entries
+GRANT INSERT ON TABLE OPSMIND.GOVERNANCE.APPROVAL_DECISIONS TO ROLE OPSMIND_OPERATOR;
+GRANT INSERT ON TABLE OPSMIND.GOVERNANCE.EXECUTED_ACTIONS TO ROLE OPSMIND_OPERATOR;
+GRANT INSERT ON TABLE OPSMIND.GOVERNANCE.AUDIT_LOG TO ROLE OPSMIND_OPERATOR;
+
+-- OPERATOR: update recommendation status after approval
+GRANT UPDATE ON TABLE OPSMIND.AI.RECOMMENDATIONS TO ROLE OPSMIND_OPERATOR;

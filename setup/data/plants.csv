@@ -1,0 +1,4 @@
+plant_id,plant_name,region,timezone,plant_type
+PLT-001,Midwest Manufacturing,US-Central,America/Chicago,Assembly & Machining
+PLT-002,Southeast Assembly,US-Southeast,America/New_York,Assembly
+PLT-003,Pacific Components,US-West,America/Los_Angeles,Components

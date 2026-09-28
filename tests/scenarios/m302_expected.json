@@ -1,0 +1,142 @@
+{
+  "scenario_id": "m302_bearing_degradation",
+  "scenario_version": "1.0",
+  "description": "M-302 CNC Milling Center progressive bearing degradation investigation",
+
+  "target_asset": {
+    "machine_id": "M-302",
+    "machine_type": "CNC Milling Center",
+    "line_id": "LINE-301",
+    "plant_id": "PLT-001"
+  },
+
+  "expected_anomaly_signals": {
+    "required_signal_types": ["vibration_anomaly", "thermal_anomaly", "oee_decline"],
+    "minimum_signal_count": 3,
+    "severity_must_include": ["critical"]
+  },
+
+  "expected_root_cause": {
+    "category": "bearing_degradation",
+    "acceptable_terms": [
+      "bearing degradation",
+      "bearing wear",
+      "bearing failure",
+      "spindle bearing",
+      "bearing damage",
+      "bearing deterioration"
+    ],
+    "component": "bearing"
+  },
+
+  "expected_evidence_sources": {
+    "structured_data": {
+      "must_reference": [
+        {
+          "source": "sensor_readings",
+          "metric": "vibration",
+          "assertion": "values_increasing_over_time"
+        },
+        {
+          "source": "sensor_readings",
+          "metric": "bearing_temp",
+          "assertion": "values_increasing_over_time"
+        },
+        {
+          "source": "oee_metrics",
+          "metric": "oee_pct",
+          "assertion": "values_decreasing_over_time"
+        }
+      ],
+      "should_reference": [
+        {
+          "source": "maintenance_history",
+          "assertion": "overdue_bearing_inspection_identified"
+        },
+        {
+          "source": "maintenance_history",
+          "assertion": "previous_bearing_replacement_age_noted"
+        },
+        {
+          "source": "failure_history",
+          "assertion": "similar_failure_on_peer_machine_referenced"
+        }
+      ]
+    },
+    "unstructured_data": {
+      "should_reference": [
+        {
+          "source": "vibration_threshold_guide",
+          "assertion": "threshold_values_cited"
+        },
+        {
+          "source": "bearing_inspection_sop",
+          "assertion": "inspection_criteria_or_intervals_cited"
+        }
+      ]
+    }
+  },
+
+  "expected_risk_assessment": {
+    "risk_direction": "increasing",
+    "acceptable_risk_terms": [
+      "imminent failure",
+      "increasing risk",
+      "worsening",
+      "escalating",
+      "high risk",
+      "bearing seizure",
+      "catastrophic failure"
+    ]
+  },
+
+  "expected_business_impact": {
+    "impact_direction": "negative",
+    "must_mention_any_of": [
+      "production loss",
+      "throughput reduction",
+      "capacity loss",
+      "OEE decline",
+      "quality impact",
+      "defect rate",
+      "downtime",
+      "cost"
+    ]
+  },
+
+  "expected_recommendation": {
+    "action_category": "inspect_or_replace_bearing",
+    "acceptable_actions": [
+      "bearing inspection",
+      "bearing replacement",
+      "emergency inspection",
+      "emergency maintenance",
+      "remove from production",
+      "schedule replacement",
+      "immediate inspection"
+    ],
+    "priority_must_be": ["critical", "high", "urgent", "emergency"]
+  },
+
+  "expected_governance": {
+    "human_approval_required": true,
+    "work_order_action_expected": true,
+    "acceptable_work_order_types": [
+      "emergency",
+      "corrective",
+      "inspection"
+    ]
+  },
+
+  "comparison_context": {
+    "peer_machines_should_be_normal": ["M-301", "M-303"],
+    "assertion": "M-302 anomaly is machine-specific, not line-wide or plant-wide"
+  },
+
+  "validation_notes": {
+    "matching_strategy": "semantic",
+    "description": "Assertions should be evaluated against the semantic content of the agent response, not exact string matching. Use keyword presence, directional assertions, and category matching.",
+    "minimum_must_reference_score": 3,
+    "minimum_should_reference_score": 3
+  }
+}
