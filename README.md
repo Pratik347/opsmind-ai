@@ -100,7 +100,7 @@ No manual Snowflake configuration should be required beyond initial account-leve
 | Snowflake foundation and data deployment | **Complete** |
 | Semantic layer (Cortex Analyst) | **Complete** |
 | Cortex Search integration | **Complete** |
-| Cortex Agent specification | Not started |
+| Cortex Agent specification | **Complete** |
 | Streamlit UI | Not started |
 | CoCo skills | Not started |
 | End-to-end testing | Not started |
