@@ -8,15 +8,7 @@ USE ROLE ACCOUNTADMIN;
 USE WAREHOUSE OPSMIND_WH;
 USE DATABASE OPSMIND;
 
--- Grant CREATE SEMANTIC VIEW on APP schema to ACCOUNTADMIN (idempotent)
--- ACCOUNTADMIN already owns the schema, so this is a no-op but explicit.
-
--- Deploy the semantic view from the YAML specification.
--- The YAML is inlined here for reproducibility.
--- To regenerate: read semantic/opsmind_operations.yaml
-CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
-  'OPSMIND.APP',
-  $$
+CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('OPSMIND.APP', $$
 name: OPSMIND_OPERATIONS
 description: >
   Manufacturing operations intelligence semantic model.
@@ -37,7 +29,14 @@ module_custom_instructions:
     to get daily values. Maintenance status values include 'completed',
     'scheduled', 'overdue', and 'cancelled'. Work order priority values
     are 'critical', 'high', 'medium', 'low'. Anomaly severity values
-    are 'critical', 'warning', 'info'.
+    are 'critical', 'warning', 'info'. IMPACT_SCENARIOS contains
+    pre-calculated business-impact scenario estimates (planned intervention
+    vs unplanned failure) per machine per component. All financial values
+    are estimates derived from governed assumptions with ASSUMPTION_SOURCE
+    and ASSUMPTION_BASIS fields — always surface this provenance when
+    reporting impact figures. Production loss uses line design capacity as
+    a proxy, not actual realized revenue. All scenario values are
+    estimates, not predictions or guaranteed savings.
 
 tables:
   - name: PLANTS
@@ -262,12 +261,13 @@ tables:
           - power_consumption
           - coolant_pressure
       - name: UNIT
-        description: Unit of measurement (mm/s, degrees C, RPM, kW, bar)
+        description: Unit of measurement (mm/s, °C, RPM, kW, bar)
         expr: UNIT
         data_type: VARCHAR
         is_enum: true
         sample_values:
           - mm/s
+          - °C
           - RPM
           - kW
           - bar
@@ -320,7 +320,7 @@ tables:
   - name: OEE_METRICS
     description: >
       Overall Equipment Effectiveness metrics per machine per date
-      per shift. OEE = availability x performance x quality / 10000.
+      per shift. OEE = availability × performance × quality / 10000.
       Values are percentages (0-100).
     synonyms:
       - OEE
@@ -910,6 +910,208 @@ tables:
         description: Maximum deviation percentage from baseline
         expr: MAX(DEVIATION_PCT)
 
+  - name: IMPACT_SCENARIOS
+    description: >
+      Pre-calculated business-impact scenario estimates. Each row compares
+      the estimated cost of a planned intervention vs an unplanned failure
+      for a specific machine and component. Derived deterministically from
+      governed assumption parameters joined with machine and production
+      line data. All output values are estimates, not predictions or
+      guaranteed savings. Production loss is calculated using line design
+      capacity as a proxy — not actual realized revenue. Always report
+      ASSUMPTION_SOURCE and ASSUMPTION_BASIS when presenting these figures.
+    synonyms:
+      - impact scenarios
+      - what-if scenarios
+      - business impact
+      - cost comparison
+      - intervention analysis
+    base_table:
+      database: OPSMIND
+      schema: AI
+      table: IMPACT_SCENARIOS
+    primary_key:
+      columns:
+        - MACHINE_ID
+        - FAILURE_COMPONENT
+    dimensions:
+      - name: MACHINE_ID
+        synonyms:
+          - equipment id
+        description: Machine identifier
+        expr: MACHINE_ID
+        data_type: VARCHAR
+      - name: MACHINE_NAME
+        synonyms:
+          - equipment name
+        description: Machine display name
+        expr: MACHINE_NAME
+        data_type: VARCHAR
+      - name: MACHINE_TYPE
+        synonyms:
+          - equipment type
+        description: Machine type category
+        expr: MACHINE_TYPE
+        data_type: VARCHAR
+      - name: CRITICALITY_RATING
+        synonyms:
+          - criticality
+          - importance
+        description: Machine criticality rating
+        expr: CRITICALITY_RATING
+        data_type: VARCHAR
+      - name: LINE_ID
+        description: Production line identifier
+        expr: LINE_ID
+        data_type: VARCHAR
+      - name: LINE_NAME
+        description: Production line name
+        expr: LINE_NAME
+        data_type: VARCHAR
+      - name: FAILURE_COMPONENT
+        synonyms:
+          - component
+          - part
+        description: Component being analyzed
+        expr: FAILURE_COMPONENT
+        data_type: VARCHAR
+      - name: ASSUMPTION_ID
+        description: Reference to source assumption row
+        expr: ASSUMPTION_ID
+        data_type: VARCHAR
+      - name: ASSUMPTION_SOURCE
+        synonyms:
+          - data source
+        description: Provenance of financial assumptions (e.g. SYNTHETIC_DEMO)
+        expr: ASSUMPTION_SOURCE
+        data_type: VARCHAR
+      - name: ASSUMPTION_BASIS
+        synonyms:
+          - basis
+          - justification
+        description: Narrative basis for assumption values — explains how they were derived
+        expr: ASSUMPTION_BASIS
+        data_type: VARCHAR
+      - name: ASSUMPTION_VERSION
+        synonyms:
+          - version
+        description: Version identifier for the assumption parameter set
+        expr: ASSUMPTION_VERSION
+        data_type: VARCHAR
+    facts:
+      - name: DESIGN_CAPACITY_UNITS_HR
+        synonyms:
+          - line capacity
+          - hourly capacity
+        description: Production line design capacity (units per hour) — used as a proxy for production loss, not actual realized throughput
+        expr: DESIGN_CAPACITY_UNITS_HR
+        data_type: FLOAT
+      - name: ESTIMATED_TOTAL_PLANNED_INTERVENTION_USD
+        synonyms:
+          - planned cost
+          - intervention cost
+          - planned intervention cost
+        description: Estimated total cost of planned intervention (labor + parts + estimated production loss)
+        expr: ESTIMATED_TOTAL_PLANNED_INTERVENTION_USD
+        data_type: FLOAT
+      - name: ESTIMATED_TOTAL_UNPLANNED_FAILURE_USD
+        synonyms:
+          - unplanned cost
+          - failure cost
+          - emergency cost
+        description: Estimated total cost of unplanned failure (emergency labor + rush parts + collateral repair + estimated production loss)
+        expr: ESTIMATED_TOTAL_UNPLANNED_FAILURE_USD
+        data_type: FLOAT
+      - name: ESTIMATED_POTENTIAL_AVOIDED_IMPACT_USD
+        synonyms:
+          - avoided cost
+          - potential avoided impact
+          - cost avoidance
+        description: Estimated potential cost avoided by intervening proactively (unplanned minus planned). This is an estimate, not guaranteed savings.
+        expr: ESTIMATED_POTENTIAL_AVOIDED_IMPACT_USD
+        data_type: FLOAT
+      - name: ESTIMATED_AVOIDED_DOWNTIME_HRS
+        synonyms:
+          - saved downtime
+          - downtime reduction
+        description: Estimated hours of downtime avoided by planned intervention
+        expr: ESTIMATED_AVOIDED_DOWNTIME_HRS
+        data_type: FLOAT
+      - name: ESTIMATED_AVOIDED_PRODUCTION_LOSS_UNITS
+        synonyms:
+          - saved production
+          - units saved
+        description: Estimated production units saved by planned intervention (based on design capacity, not actual throughput)
+        expr: ESTIMATED_AVOIDED_PRODUCTION_LOSS_UNITS
+        data_type: FLOAT
+      - name: ESTIMATED_PLANNED_PRODUCTION_LOSS_USD
+        description: Estimated production value lost during planned intervention (design capacity proxy)
+        expr: ESTIMATED_PLANNED_PRODUCTION_LOSS_USD
+        data_type: FLOAT
+      - name: ESTIMATED_UNPLANNED_PRODUCTION_LOSS_USD
+        description: Estimated production value lost during unplanned failure (design capacity proxy)
+        expr: ESTIMATED_UNPLANNED_PRODUCTION_LOSS_USD
+        data_type: FLOAT
+      - name: PRODUCTION_VALUE_PER_UNIT_USD
+        synonyms:
+          - unit value
+        description: Assumed production value per unit (USD) used in calculations
+        expr: PRODUCTION_VALUE_PER_UNIT_USD
+        data_type: FLOAT
+      - name: PLANNED_DOWNTIME_HRS
+        description: Assumed downtime hours for planned intervention (input assumption)
+        expr: PLANNED_DOWNTIME_HRS
+        data_type: FLOAT
+      - name: PLANNED_LABOR_COST_USD
+        description: Assumed labor cost for planned intervention (input assumption)
+        expr: PLANNED_LABOR_COST_USD
+        data_type: FLOAT
+      - name: PLANNED_PARTS_COST_USD
+        description: Assumed parts cost for planned intervention (input assumption)
+        expr: PLANNED_PARTS_COST_USD
+        data_type: FLOAT
+      - name: UNPLANNED_DOWNTIME_HRS
+        description: Assumed downtime hours for unplanned failure (input assumption)
+        expr: UNPLANNED_DOWNTIME_HRS
+        data_type: FLOAT
+      - name: EMERGENCY_LABOR_COST_USD
+        description: Assumed emergency labor cost (input assumption)
+        expr: EMERGENCY_LABOR_COST_USD
+        data_type: FLOAT
+      - name: EXPEDITED_PARTS_COST_USD
+        description: Assumed expedited parts cost (input assumption)
+        expr: EXPEDITED_PARTS_COST_USD
+        data_type: FLOAT
+      - name: ESTIMATED_COLLATERAL_REPAIR_COST_USD
+        synonyms:
+          - collateral repair cost
+          - secondary damage cost
+        description: Estimated collateral repair cost from failure (input assumption)
+        expr: ESTIMATED_COLLATERAL_REPAIR_COST_USD
+        data_type: FLOAT
+    metrics:
+      - name: TOTAL_ESTIMATED_AVOIDED_IMPACT
+        synonyms:
+          - total potential avoided impact
+          - total cost avoidance
+        description: Sum of estimated potential avoided impact across scenarios
+        expr: SUM(ESTIMATED_POTENTIAL_AVOIDED_IMPACT_USD)
+      - name: AVG_ESTIMATED_PLANNED_COST
+        synonyms:
+          - average intervention cost
+        description: Average estimated planned intervention cost
+        expr: AVG(ESTIMATED_TOTAL_PLANNED_INTERVENTION_USD)
+      - name: AVG_ESTIMATED_UNPLANNED_COST
+        synonyms:
+          - average failure cost
+        description: Average estimated unplanned failure cost
+        expr: AVG(ESTIMATED_TOTAL_UNPLANNED_FAILURE_USD)
+      - name: MAX_ESTIMATED_AVOIDED_IMPACT
+        synonyms:
+          - highest potential avoided impact
+        description: Maximum estimated potential avoided impact across scenarios
+        expr: MAX(ESTIMATED_POTENTIAL_AVOIDED_IMPACT_USD)
+
 relationships:
   - name: LINES_TO_PLANTS
     left_table: PRODUCTION_LINES
@@ -966,5 +1168,11 @@ relationships:
     relationship_columns:
       - left_column: MACHINE_ID
         right_column: MACHINE_ID
-  $$
-);
+
+  - name: IMPACT_SCENARIOS_TO_MACHINES
+    left_table: IMPACT_SCENARIOS
+    right_table: MACHINES
+    relationship_columns:
+      - left_column: MACHINE_ID
+        right_column: MACHINE_ID
+$$);

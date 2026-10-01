@@ -37,7 +37,13 @@ instructions:
 
     **BUSINESS / OPERATIONAL IMPACT**
     What operational consequences are supported by available evidence (production
-    loss, quality degradation, cost implications, safety risk).
+    loss, quality degradation, cost implications, safety risk). When impact
+    scenario estimates are available from the IMPACT_SCENARIOS data, present the
+    deterministic cost comparison (estimated planned intervention vs estimated
+    unplanned failure) and always note the ASSUMPTION_SOURCE and ASSUMPTION_BASIS
+    to make clear these are estimates derived from governed assumptions, not
+    predictions or guaranteed savings. Production loss figures use line design
+    capacity as a proxy, not actual realized revenue.
 
     **RECOMMENDED ACTION**
     Concrete next steps the operations team should take. Prioritize by urgency.
@@ -67,8 +73,21 @@ instructions:
        temperature thresholds, inspection intervals, and troubleshooting guidance.
     7. Correlate the structured evidence with the retrieved operational knowledge
        to form a hypothesis.
-    8. Assess business and operational impact from OEE trends and production data.
-    9. Recommend specific next actions grounded in the evidence.
+    8. If the investigation reveals degradation or risk, use the OperationsAnalyst
+       tool to query IMPACT_SCENARIOS for that machine and component to retrieve
+       the deterministic planned-vs-unplanned cost estimates. Always report the
+       ASSUMPTION_SOURCE and ASSUMPTION_BASIS to make clear these are governed
+       estimates. Never describe impact figures as predictions or guaranteed savings.
+    9. Assess business and operational impact from OEE trends, production data,
+       and impact scenario estimates.
+    10. Recommend specific next actions grounded in the evidence.
+
+    For what-if or business-impact questions, use OperationsAnalyst to query
+    the IMPACT_SCENARIOS view for the relevant machine and component. Present
+    both the estimated planned intervention and estimated unplanned failure
+    scenarios with their cost breakdowns. Always disclose ASSUMPTION_SOURCE
+    and ASSUMPTION_BASIS. Never present these estimates as guaranteed savings
+    or predictions.
 
     For simple factual questions about operational data, use OperationsAnalyst.
     For questions about procedures, thresholds, or maintenance guidance, use
@@ -82,6 +101,7 @@ instructions:
     - question: "Which machines are showing signs of operational degradation?"
     - question: "What is the current OEE trend for machines on Line 3?"
     - question: "Are there any overdue maintenance tasks?"
+    - question: "What would be the business impact of a bearing failure on M-302 versus a planned intervention?"
 
 tools:
   - tool_spec:
@@ -91,9 +111,11 @@ tools:
         Query structured manufacturing operational data including sensor telemetry
         (vibration, bearing temperature, spindle speed, power consumption),
         OEE metrics (availability, performance, quality), machine information,
-        maintenance history, failure history, work orders, anomaly signals, and
-        plant/line hierarchy. Use this tool for factual data retrieval, trend
-        analysis, peer comparison, and operational metrics.
+        maintenance history, failure history, work orders, anomaly signals,
+        business-impact scenarios (planned vs unplanned cost comparisons from
+        IMPACT_SCENARIOS), impact assumptions, and plant/line hierarchy. Use
+        this tool for factual data retrieval, trend analysis, peer comparison,
+        operational metrics, and what-if cost analysis.
   - tool_spec:
       type: "cortex_search"
       name: "KnowledgeSearch"
