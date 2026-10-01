@@ -399,7 +399,7 @@ rec_rows = [
      "Vibration and bearing temperature trends indicate progressive bearing degradation. OEE has declined from 87% to 72%. Scheduled bearing inspection (Sep 10) is overdue. Similar pattern preceded M-303 bearing failure in January 2026.",
      "Vibration 195% above baseline; bearing temp 62% above baseline; OEE declined 17%; overdue bearing inspection; similar historical failure on M-303",
      2800.00,4.0,"Bearing seizure risk within 1-2 weeks. Unplanned failure cost estimated at $15,000-25,000 plus 2-3 days production loss.",
-     "pending"),
+     "executed"),
 ]
 
 write_csv("recommendations.csv",

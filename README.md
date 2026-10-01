@@ -102,6 +102,7 @@ No manual Snowflake configuration should be required beyond initial account-leve
 | Cortex Search integration | **Complete** |
 | Cortex Agent specification | **Complete** |
 | Business Impact Engine | **Complete** |
+| Governance Engine (Approval/Execution) | **Complete** |
 | Streamlit UI | Not started |
 | CoCo skills | Not started |
 | End-to-end testing | Not started |

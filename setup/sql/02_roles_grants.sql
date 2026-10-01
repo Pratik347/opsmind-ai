@@ -112,10 +112,18 @@ GRANT SELECT ON ALL TABLES IN SCHEMA OPSMIND.GOVERNANCE TO ROLE OPSMIND_OPERATOR
 GRANT SELECT ON FUTURE TABLES IN SCHEMA OPSMIND.GOVERNANCE TO ROLE OPSMIND_OPERATOR;
 
 -- OPERATOR: insert approvals, actions, and audit entries
+-- NOTE: These direct INSERT/UPDATE grants are needed during initial
+-- deployment (scripts 00–10). Phase 4B (11_governance_enforcement.sql)
+-- REVOKES these grants and replaces them with procedure-mediated access
+-- through OPSMIND_GOVERNANCE_EXECUTOR-owned stored procedures. After
+-- script 11 runs, OPERATOR can only modify governance data through
+-- APPROVE_RECOMMENDATION and EXECUTE_APPROVED_ACTION procedures.
 GRANT INSERT ON TABLE OPSMIND.GOVERNANCE.APPROVAL_DECISIONS TO ROLE OPSMIND_OPERATOR;
 GRANT INSERT ON TABLE OPSMIND.GOVERNANCE.EXECUTED_ACTIONS TO ROLE OPSMIND_OPERATOR;
 GRANT INSERT ON TABLE OPSMIND.GOVERNANCE.AUDIT_LOG TO ROLE OPSMIND_OPERATOR;
 
 -- OPERATOR: read + update recommendation status after approval
+-- NOTE: UPDATE is revoked by 11_governance_enforcement.sql (Phase 4B).
+-- After script 11, status transitions happen only inside procedures.
 GRANT SELECT ON TABLE OPSMIND.AI.RECOMMENDATIONS TO ROLE OPSMIND_OPERATOR;
 GRANT UPDATE ON TABLE OPSMIND.AI.RECOMMENDATIONS TO ROLE OPSMIND_OPERATOR;
