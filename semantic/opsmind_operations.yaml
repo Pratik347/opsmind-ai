@@ -25,7 +25,18 @@ module_custom_instructions:
     and ASSUMPTION_BASIS fields — always surface this provenance when
     reporting impact figures. Production loss uses line design capacity as
     a proxy, not actual realized revenue. All scenario values are
-    estimates, not predictions or guaranteed savings.
+    estimates, not predictions or guaranteed savings. FAILURE_RISK_SCORES
+    contains a current condition-based equipment failure risk index per
+    machine. The RISK_SCORE is a composite index (0–100) — NOT a
+    probability, likelihood, or time-to-failure estimate. It indicates
+    how strongly current operating evidence points toward elevated
+    failure risk. The RISK_BAND categorizes risk as LOW/MEDIUM/HIGH/
+    CRITICAL. DATA_QUALITY indicates whether telemetry was COMPLETE,
+    PARTIAL, or INSUFFICIENT for a reliable score. Individual feature
+    scores explain which factors contribute. Always describe risk scores
+    as a risk index, never as a probability or likelihood. Composite
+    risk bands and feature weights are expert-defined operational
+    heuristics, not statistically calibrated.
 
 tables:
   - name: PLANTS
@@ -1101,6 +1112,171 @@ tables:
         description: Maximum estimated potential avoided impact across scenarios
         expr: MAX(ESTIMATED_POTENTIAL_AVOIDED_IMPACT_USD)
 
+  - name: FAILURE_RISK_SCORES
+    description: >
+      Current condition-based failure risk index per machine. Each row
+      contains a composite risk score (0–100) and risk band (LOW/MEDIUM/
+      HIGH/CRITICAL) calculated from five independently justified features:
+      vibration level, vibration trend, thermal deviation, OEE degradation,
+      and maintenance overdue status. All features use a trailing 7-day
+      lookback window from the latest data date. This is a RISK INDEX —
+      not a failure probability, likelihood, or time-to-failure estimate.
+      It indicates how strongly current operating evidence points toward
+      elevated equipment failure risk. Feature thresholds are grounded in
+      DOC-002 (ISO 10816-3 adaptation). Composite risk bands and feature
+      weights are expert-defined operational heuristics, not statistically
+      calibrated. Individual feature scores are exposed for explainability.
+      DATA_QUALITY indicates whether telemetry was complete (COMPLETE),
+      partially available (PARTIAL), or insufficient for a reliable score
+      (INSUFFICIENT). Always describe risk scores as a risk index.
+    synonyms:
+      - failure risk
+      - risk scores
+      - equipment risk
+      - machine risk
+      - condition risk
+    base_table:
+      database: OPSMIND
+      schema: AI
+      table: FAILURE_RISK_SCORES
+    primary_key:
+      columns:
+        - MACHINE_ID
+    dimensions:
+      - name: MACHINE_ID
+        description: Machine identifier
+        expr: MACHINE_ID
+        data_type: VARCHAR
+      - name: MACHINE_NAME
+        description: Machine display name
+        expr: MACHINE_NAME
+        data_type: VARCHAR
+      - name: MACHINE_TYPE
+        description: Machine type category
+        expr: MACHINE_TYPE
+        data_type: VARCHAR
+      - name: RISK_BAND
+        synonyms:
+          - risk level
+          - risk category
+        description: Risk classification band — LOW (0–25), MEDIUM (26–50), HIGH (51–75), CRITICAL (76–100)
+        expr: RISK_BAND
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+      - name: AS_OF_DATE
+        synonyms:
+          - assessment date
+          - risk date
+        description: Date the risk was assessed (latest available sensor data date)
+        expr: AS_OF_DATE
+        data_type: DATE
+      - name: DATA_QUALITY
+        synonyms:
+          - data status
+          - completeness status
+        description: Telemetry completeness — COMPLETE (all features available), PARTIAL (some missing), INSUFFICIENT (cannot produce reliable score)
+        expr: DATA_QUALITY
+        data_type: VARCHAR
+        is_enum: true
+        sample_values:
+          - COMPLETE
+          - PARTIAL
+          - INSUFFICIENT
+      - name: METHOD_VERSION
+        description: Version of the risk index methodology
+        expr: METHOD_VERSION
+        data_type: VARCHAR
+      - name: THRESHOLD_SOURCE
+        description: Source of threshold calibration values
+        expr: THRESHOLD_SOURCE
+        data_type: VARCHAR
+    facts:
+      - name: RISK_SCORE
+        synonyms:
+          - failure risk score
+          - risk index
+          - risk value
+        description: Composite equipment failure risk index (0–100). NOT a probability or likelihood. Higher values indicate stronger evidence of elevated failure risk. NULL if telemetry data is insufficient.
+        expr: RISK_SCORE
+        data_type: FLOAT
+      - name: DATA_COMPLETENESS_PCT
+        synonyms:
+          - completeness
+          - data coverage
+        description: Percentage of expected telemetry features available for this machine (0–100)
+        expr: DATA_COMPLETENESS_PCT
+        data_type: FLOAT
+      - name: VIBRATION_LEVEL_SCORE
+        synonyms:
+          - vibration risk
+        description: Vibration level feature score (0–100) mapped to DOC-002 zones
+        expr: VIBRATION_LEVEL_SCORE
+        data_type: FLOAT
+      - name: VIBRATION_TREND_SCORE
+        synonyms:
+          - vibration trend risk
+        description: Vibration trend (slope) feature score (0–100)
+        expr: VIBRATION_TREND_SCORE
+        data_type: FLOAT
+      - name: THERMAL_DEVIATION_SCORE
+        synonyms:
+          - temperature risk
+        description: Thermal deviation feature score (0–100) mapped to DOC-002 temperature thresholds
+        expr: THERMAL_DEVIATION_SCORE
+        data_type: FLOAT
+      - name: OEE_DEGRADATION_SCORE
+        synonyms:
+          - OEE risk
+        description: OEE degradation feature score (0–100)
+        expr: OEE_DEGRADATION_SCORE
+        data_type: FLOAT
+      - name: MAINTENANCE_OVERDUE_SCORE
+        synonyms:
+          - maintenance risk
+        description: Maintenance overdue feature score (0–100)
+        expr: MAINTENANCE_OVERDUE_SCORE
+        data_type: FLOAT
+      - name: LATEST_VIBRATION
+        description: Latest 7-day average vibration (mm/s)
+        expr: LATEST_VIBRATION
+        data_type: FLOAT
+      - name: LATEST_BEARING_TEMP
+        description: Latest 7-day average bearing temperature (°C)
+        expr: LATEST_BEARING_TEMP
+        data_type: FLOAT
+      - name: LATEST_OEE
+        description: Latest 7-day average OEE percentage
+        expr: LATEST_OEE
+        data_type: FLOAT
+      - name: BASELINE_OEE
+        description: First-week baseline OEE percentage for comparison
+        expr: BASELINE_OEE
+        data_type: FLOAT
+    metrics:
+      - name: MAX_RISK_SCORE
+        synonyms:
+          - highest risk
+          - worst risk
+        description: Maximum failure risk score across machines
+        expr: MAX(RISK_SCORE)
+      - name: AVG_RISK_SCORE
+        synonyms:
+          - average risk
+          - mean risk
+        description: Average failure risk score across machines
+        expr: AVG(RISK_SCORE)
+      - name: HIGH_RISK_MACHINE_COUNT
+        synonyms:
+          - machines at risk
+          - high risk count
+        description: Count of machines with risk band HIGH or CRITICAL
+        expr: COUNT(CASE WHEN RISK_BAND IN ('HIGH', 'CRITICAL') THEN 1 END)
+
 relationships:
   - name: LINES_TO_PLANTS
     left_table: PRODUCTION_LINES
@@ -1160,6 +1336,13 @@ relationships:
 
   - name: IMPACT_SCENARIOS_TO_MACHINES
     left_table: IMPACT_SCENARIOS
+    right_table: MACHINES
+    relationship_columns:
+      - left_column: MACHINE_ID
+        right_column: MACHINE_ID
+
+  - name: RISK_SCORES_TO_MACHINES
+    left_table: FAILURE_RISK_SCORES
     right_table: MACHINES
     relationship_columns:
       - left_column: MACHINE_ID

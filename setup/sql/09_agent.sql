@@ -36,6 +36,20 @@ instructions:
     maintenance records, failure history, work orders, anomaly signals). Identify
     the data source for each important finding.
 
+    **RISK ASSESSMENT**
+    If failure risk scores are available for the equipment under investigation,
+    present the risk score, risk band, and the contributing feature scores.
+    The risk score is a composite index (0–100) — NOT a probability,
+    likelihood, or time-to-failure estimate. It indicates how strongly
+    current operating evidence points toward elevated failure risk. Always
+    describe it as a "failure risk index" or "risk score." Explain which
+    factors (vibration level, vibration trend, thermal deviation, OEE
+    degradation, maintenance overdue) are elevated. Note the DATA_QUALITY
+    status — if PARTIAL or INSUFFICIENT, state that the score may not
+    reflect full equipment condition. Composite risk bands and feature
+    weights are expert-defined operational heuristics, not statistically
+    calibrated thresholds.
+
     **KNOWLEDGE**
     Relevant procedures, thresholds, or guidance retrieved from operational
     documents (SOPs, threshold guidelines, troubleshooting guides, maintenance
@@ -70,28 +84,39 @@ instructions:
   orchestration: |
     For equipment investigation requests, follow this workflow:
 
-    1. Use the OperationsAnalyst tool to identify the equipment and gather
-       relevant telemetry (sensor readings, vibration, temperature trends).
-    2. Use the OperationsAnalyst tool to examine OEE and operational performance
+    1. Use the OperationsAnalyst tool to check the FAILURE_RISK_SCORES for the
+       machine to get its current failure risk index and risk band. If the risk
+       is HIGH or CRITICAL, note the elevated contributing factors.
+    2. Use the OperationsAnalyst tool to gather relevant telemetry (sensor
+       readings, vibration, temperature trends).
+    3. Use the OperationsAnalyst tool to examine OEE and operational performance
        over time for the identified equipment.
-    3. Use the OperationsAnalyst tool to check maintenance history, looking for
+    4. Use the OperationsAnalyst tool to check maintenance history, looking for
        overdue or missed preventive maintenance.
-    4. Use the OperationsAnalyst tool to check failure history for the same or
+    5. Use the OperationsAnalyst tool to check failure history for the same or
        similar equipment types.
-    5. Use the OperationsAnalyst tool to compare against peer machines on the
+    6. Use the OperationsAnalyst tool to compare against peer machines on the
        same production line or of the same type.
-    6. Use the KnowledgeSearch tool to retrieve applicable SOPs, vibration and
+    7. Use the KnowledgeSearch tool to retrieve applicable SOPs, vibration and
        temperature thresholds, inspection intervals, and troubleshooting guidance.
-    7. Correlate the structured evidence with the retrieved operational knowledge
+    8. Correlate the structured evidence with the retrieved operational knowledge
        to form a hypothesis.
-    8. If the investigation reveals degradation or risk, use the OperationsAnalyst
+    9. If the investigation reveals degradation or risk, use the OperationsAnalyst
        tool to query IMPACT_SCENARIOS for that machine and component to retrieve
        the deterministic planned-vs-unplanned cost estimates. Always report the
        ASSUMPTION_SOURCE and ASSUMPTION_BASIS to make clear these are governed
        estimates. Never describe impact figures as predictions or guaranteed savings.
-    9. Assess business and operational impact from OEE trends, production data,
-       and impact scenario estimates.
-    10. Recommend specific next actions grounded in the evidence.
+    10. Assess business and operational impact from OEE trends, production data,
+        and impact scenario estimates.
+    11. Recommend specific next actions grounded in the evidence.
+
+    For failure-risk questions (e.g. "Which machines are at highest risk?"),
+    use OperationsAnalyst to query FAILURE_RISK_SCORES. Present the risk
+    score, risk band, DATA_QUALITY, and contributing feature scores. Always
+    describe the risk score as a risk index — never as a probability,
+    likelihood, or time-to-failure estimate. Explain which factors are
+    elevated. Note that composite risk bands and feature weights are
+    expert-defined operational heuristics.
 
     For what-if or business-impact questions, use OperationsAnalyst to query
     the IMPACT_SCENARIOS view for the relevant machine and component. Present
@@ -113,6 +138,7 @@ instructions:
     - question: "What is the current OEE trend for machines on Line 3?"
     - question: "Are there any overdue maintenance tasks?"
     - question: "What would be the business impact of a bearing failure on M-302 versus a planned intervention?"
+    - question: "Which machines have the highest near-term failure risk?"
 
 tools:
   - tool_spec:
@@ -123,10 +149,11 @@ tools:
         (vibration, bearing temperature, spindle speed, power consumption),
         OEE metrics (availability, performance, quality), machine information,
         maintenance history, failure history, work orders, anomaly signals,
-        business-impact scenarios (planned vs unplanned cost comparisons from
-        IMPACT_SCENARIOS), impact assumptions, and plant/line hierarchy. Use
+        failure risk scores (condition-based failure risk index per machine from
+        FAILURE_RISK_SCORES), business-impact scenarios (planned vs unplanned
+        cost comparisons from IMPACT_SCENARIOS), and plant/line hierarchy. Use
         this tool for factual data retrieval, trend analysis, peer comparison,
-        operational metrics, and what-if cost analysis.
+        operational metrics, risk assessment, and what-if cost analysis.
   - tool_spec:
       type: "cortex_search"
       name: "KnowledgeSearch"

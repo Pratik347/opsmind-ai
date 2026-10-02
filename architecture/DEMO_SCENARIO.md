@@ -132,7 +132,7 @@ Bearing degradation on Machine M-302, CNC Milling Center, Production Line 3.
 
 ### Failure Risk
 - **Direction**: Increasing — imminent unplanned failure if not addressed
-- **Estimated time to failure**: Days to 1-2 weeks based on degradation rate
+- **Failure Risk Index**: HIGH — elevated vibration, thermal deviation, OEE degradation, and overdue maintenance all contribute (condition-based risk index, not a time-to-failure estimate)
 - **Failure mode**: Bearing seizure or catastrophic bearing failure
 
 ### Business Impact
