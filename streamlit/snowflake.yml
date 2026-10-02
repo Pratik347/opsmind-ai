@@ -1,0 +1,18 @@
+definition_version: 2
+entities:
+  opsmind_command_center:
+    type: streamlit
+    identifier:
+      name: OPSMIND_COMMAND_CENTER
+      schema: APP
+      database: OPSMIND
+    title: "OpsMind AI Command Center"
+    comment: "Enterprise operations intelligence platform — fleet risk, asset intelligence, AI investigation, governed approvals, audit trail."
+    query_warehouse: OPSMIND_WH
+    main_file: streamlit_app.py
+    pages_dir: null
+    additional_source_files:
+      - src/__init__.py
+      - src/queries.py
+      - src/agent.py
+      - src/components.py
