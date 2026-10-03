@@ -36,6 +36,13 @@ from src.components import (
 
 session = get_active_session()
 
+# Capture the authenticated viewer identity.
+# In Streamlit owner-rights mode, CURRENT_USER() returns the owner (a role, not a user),
+# which resolves to NULL. st.user.user_name is the Snowflake-authenticated viewer identity
+# provided by the Streamlit runtime — it is not user-supplied text.
+# See: https://docs.snowflake.com/en/developer-guide/streamlit/app-development/personalization
+_viewer_user = st.user.user_name
+
 
 def run_query(sql: str, params: list = None) -> pd.DataFrame:
     """Execute a SQL query and return a pandas DataFrame.
@@ -49,10 +56,15 @@ def run_query(sql: str, params: list = None) -> pd.DataFrame:
 
 def safe_rerun():
     """Rerun the app using whichever API is available."""
+    st.session_state.pop("_processing", None)
     if hasattr(st, "rerun"):
         st.rerun()
     else:
         st.experimental_rerun()
+
+
+def _is_processing() -> bool:
+    return st.session_state.get("_processing", False)
 
 
 # -- Sidebar Navigation ---------------------------------------------------
@@ -238,10 +250,12 @@ elif view == "AI Investigator":
         "Are there any overdue maintenance tasks?",
         "Compare OEE trends for machines on Line 3.",
     ]
-    sug_cols = st.columns(len(suggestions))
-    for i, (col, suggestion) in enumerate(zip(sug_cols, suggestions)):
+    row1 = st.columns(3)
+    row2 = st.columns(3)
+    sug_layout = [row1[0], row1[1], row1[2], row2[0], row2[1]]
+    for i, (col, suggestion) in enumerate(zip(sug_layout, suggestions)):
         with col:
-            if st.button(suggestion[:30] + "...", key=f"sug_{i}", use_container_width=True):
+            if st.button(suggestion, key=f"sug_{i}", use_container_width=True):
                 st.session_state.pending_question = suggestion
 
     # Display conversation history
@@ -262,9 +276,10 @@ elif view == "AI Investigator":
     if "pending_question" in st.session_state:
         question = st.session_state.pop("pending_question")
 
-    investigate_clicked = st.button("Investigate", type="primary")
+    investigate_clicked = st.button("Investigate", type="primary", disabled=_is_processing())
 
     if investigate_clicked and question and question.strip():
+        st.session_state._processing = True
         # Store user message
         st.session_state.agent_messages.append({"role": "user", "content": question})
 
@@ -287,8 +302,8 @@ elif view == "AI Investigator":
 
             # Check for warnings
             warnings = response.get("warnings", [])
-            for w in warnings:
-                st.warning(f"Agent warning: {w.get('message', '')}")
+            if warnings:
+                st.warning("The investigation completed with warnings. Results may be partial.")
 
         st.session_state.agent_messages.append({"role": "assistant", "content": text})
         safe_rerun()
@@ -332,38 +347,42 @@ elif view == "Decision Center":
                         "Approval justification", key=f"just_a_{rec_id}",
                         placeholder="Reason for approval..."
                     )
-                    if st.button(f"Approve {rec_id}", key=f"btn_a_{rec_id}", type="primary"):
+                    if st.button(f"Approve {rec_id}", key=f"btn_a_{rec_id}", type="primary", disabled=_is_processing()):
                         if not justification_approve.strip():
                             st.error("Justification required.")
                         else:
+                            st.session_state._processing = True
                             try:
                                 session.sql(
-                                    "CALL OPSMIND.GOVERNANCE.APPROVE_RECOMMENDATION(?, ?, ?)",
-                                    params=[rec_id, "approved", justification_approve]
+                                    "CALL OPSMIND.GOVERNANCE.APPROVE_RECOMMENDATION(?, ?, ?, ?)",
+                                    params=[rec_id, "approved", justification_approve, _viewer_user]
                                 ).collect()
                                 st.success(f"{rec_id} approved.")
                                 safe_rerun()
-                            except Exception as e:
-                                st.error(f"Approval failed: {e}")
+                            except Exception:
+                                st.session_state.pop("_processing", None)
+                                st.error("Unable to approve this recommendation. Please retry or contact the OpsMind administrator.")
 
                 with col_reject:
                     justification_reject = st.text_input(
                         "Rejection justification", key=f"just_r_{rec_id}",
                         placeholder="Reason for rejection..."
                     )
-                    if st.button(f"Reject {rec_id}", key=f"btn_r_{rec_id}"):
+                    if st.button(f"Reject {rec_id}", key=f"btn_r_{rec_id}", disabled=_is_processing()):
                         if not justification_reject.strip():
                             st.error("Justification required.")
                         else:
+                            st.session_state._processing = True
                             try:
                                 session.sql(
-                                    "CALL OPSMIND.GOVERNANCE.APPROVE_RECOMMENDATION(?, ?, ?)",
-                                    params=[rec_id, "rejected", justification_reject]
+                                    "CALL OPSMIND.GOVERNANCE.APPROVE_RECOMMENDATION(?, ?, ?, ?)",
+                                    params=[rec_id, "rejected", justification_reject, _viewer_user]
                                 ).collect()
                                 st.success(f"{rec_id} rejected.")
                                 safe_rerun()
-                            except Exception as e:
-                                st.error(f"Rejection failed: {e}")
+                            except Exception:
+                                st.session_state.pop("_processing", None)
+                                st.error("Unable to reject this recommendation. Please retry or contact the OpsMind administrator.")
 
                 st.divider()
 
@@ -390,19 +409,21 @@ elif view == "Decision Center":
                     value="Bearing inspection scheduled"
                 )
 
-                if st.button(f"Execute {approval_id}", key=f"btn_exec_{approval_id}", type="primary"):
+                if st.button(f"Execute {approval_id}", key=f"btn_exec_{approval_id}", type="primary", disabled=_is_processing()):
                     if not action_desc.strip():
                         st.error("Action description required.")
                     else:
+                        st.session_state._processing = True
                         try:
                             session.sql(
-                                "CALL OPSMIND.GOVERNANCE.EXECUTE_APPROVED_ACTION(?, ?, ?)",
-                                params=[approval_id, action_type, action_desc]
+                                "CALL OPSMIND.GOVERNANCE.EXECUTE_APPROVED_ACTION(?, ?, ?, ?)",
+                                params=[approval_id, action_type, action_desc, _viewer_user]
                             ).collect()
                             st.success(f"Action executed for {rec_id}.")
                             safe_rerun()
-                        except Exception as e:
-                            st.error(f"Execution failed: {e}")
+                        except Exception:
+                            st.session_state.pop("_processing", None)
+                            st.error("Unable to execute this approved action. Please retry or contact the OpsMind administrator.")
 
                 st.divider()
 

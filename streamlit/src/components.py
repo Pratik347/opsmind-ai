@@ -84,12 +84,13 @@ def render_recommendation_card(rec: dict):
 
         c1, c2 = st.columns(2)
         with c1:
-            st.metric("Est. Cost", f"${rec.get('ESTIMATED_COST_USD', 0):,.0f}")
+            st.metric("Maintenance Cost", f"${rec.get('ESTIMATED_COST_USD', 0):,.0f}")
         with c2:
-            st.metric("Est. Downtime", f"{rec.get('ESTIMATED_DOWNTIME_HRS', 0)}h")
+            st.metric("Planned Downtime", f"{rec.get('ESTIMATED_DOWNTIME_HRS', 0)}h")
 
         if rec.get("RISK_IF_DEFERRED"):
-            st.warning(f"**Risk if deferred:** {rec['RISK_IF_DEFERRED']}")
+            safe_text = rec["RISK_IF_DEFERRED"].replace("$", "\\$")
+            st.warning(f"**Risk if deferred:** {safe_text}")
 
 
 def render_oee_chart(oee_df: pd.DataFrame):

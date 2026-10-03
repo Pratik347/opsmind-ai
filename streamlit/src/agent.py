@@ -57,8 +57,8 @@ def call_agent(session, question: str, thread_id: int = None, parent_message_id:
             resp = json.loads(str(result[0]["RESP"]))
             return resp
         return {"error": "Empty response from agent"}
-    except Exception as e:
-        return {"error": str(e)}
+    except Exception:
+        return {"error": "agent_unavailable"}
 
 
 def extract_text_blocks(response: dict) -> str:
@@ -68,7 +68,7 @@ def extract_text_blocks(response: dict) -> str:
     For tool_result blocks containing SQL results, formats a summary.
     """
     if "error" in response:
-        return f"**Error:** {response['error']}"
+        return "OpsMind AI could not complete the investigation. Please retry."
 
     content = response.get("content", [])
     parts = []

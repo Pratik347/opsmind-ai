@@ -159,7 +159,12 @@ CREATE SEQUENCE IF NOT EXISTS OPSMIND.GOVERNANCE.AUDIT_SEQ
 --   row, closing the TOCTOU window.
 --
 -- Atomicity: BEGIN TRANSACTION … COMMIT with EXCEPTION → ROLLBACK.
--- Identity: CURRENT_USER() captured; cannot be overridden by caller.
+-- Identity: P_ACTOR must be supplied by the caller. In Streamlit
+--   owner-rights mode, CURRENT_USER() returns the owner role (not the
+--   viewer), resolving to NULL. The Streamlit app uses st.user.user_name
+--   — a Snowflake-authenticated viewer identity — and passes it here.
+--   The procedure rejects NULL, empty, whitespace-only, and literal
+--   'None' values (Python None stringification defense).
 --
 -- Returns: APPROVAL_ID on success, 'ERROR: …' string on failure.
 -- ============================================================
@@ -167,7 +172,8 @@ CREATE SEQUENCE IF NOT EXISTS OPSMIND.GOVERNANCE.AUDIT_SEQ
 CREATE OR REPLACE PROCEDURE GOVERNANCE.APPROVE_RECOMMENDATION(
     P_RECOMMENDATION_ID VARCHAR,
     P_DECISION VARCHAR,
-    P_COMMENTS VARCHAR
+    P_COMMENTS VARCHAR,
+    P_ACTOR VARCHAR
 )
 RETURNS VARCHAR
 LANGUAGE SQL
@@ -185,12 +191,16 @@ DECLARE
     V_SEQ_AUD1 INTEGER;
     V_SEQ_AUD2 INTEGER;
     V_ROWS_UPDATED INTEGER;
-    V_CALLER VARCHAR DEFAULT CURRENT_USER();
+    V_CALLER VARCHAR DEFAULT :P_ACTOR;
     V_NOW TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP();
 BEGIN
     -- ── Fast-fail validation (before transaction) ────────────
     -- These pre-checks catch most errors without transaction
     -- overhead. They are NOT the concurrency-safety mechanism.
+
+    IF (V_CALLER IS NULL OR TRIM(V_CALLER) = '' OR V_CALLER = 'None') THEN
+        RETURN 'ERROR: Actor identity (P_ACTOR) is required. Cannot record approval without auditable human identity.';
+    END IF;
 
     IF (:P_DECISION NOT IN ('approved', 'rejected')) THEN
         RETURN 'ERROR: Invalid decision value. Must be ''approved'' or ''rejected''.';
@@ -319,7 +329,8 @@ $$;
 --   DML. Same serialization mechanism as APPROVE_RECOMMENDATION.
 --
 -- Atomicity: BEGIN TRANSACTION … COMMIT with EXCEPTION → ROLLBACK.
--- Identity: CURRENT_USER() captured; cannot be overridden by caller.
+-- Identity: P_ACTOR must be supplied by the caller (same rationale
+--   as APPROVE_RECOMMENDATION — see above).
 --
 -- Returns: ACTION_ID on success, 'ERROR: …' string on failure.
 -- ============================================================
@@ -328,6 +339,7 @@ CREATE OR REPLACE PROCEDURE GOVERNANCE.EXECUTE_APPROVED_ACTION(
     P_APPROVAL_ID VARCHAR,
     P_ACTION_TYPE VARCHAR,
     P_DESCRIPTION VARCHAR,
+    P_ACTOR VARCHAR,
     P_WO_ID VARCHAR DEFAULT NULL
 )
 RETURNS VARCHAR
@@ -348,10 +360,14 @@ DECLARE
     V_SEQ_AUD1 INTEGER;
     V_SEQ_AUD2 INTEGER;
     V_ROWS_UPDATED INTEGER;
-    V_CALLER VARCHAR DEFAULT CURRENT_USER();
+    V_CALLER VARCHAR DEFAULT :P_ACTOR;
     V_NOW TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP();
 BEGIN
     -- ── Fast-fail validation (before transaction) ────────────
+
+    IF (V_CALLER IS NULL OR TRIM(V_CALLER) = '' OR V_CALLER = 'None') THEN
+        RETURN 'ERROR: Actor identity (P_ACTOR) is required. Cannot record execution without auditable human identity.';
+    END IF;
 
     SELECT COUNT(*), MAX(DECISION), MAX(RECOMMENDATION_ID)
         INTO :V_APPROVAL_COUNT, :V_DECISION, :V_RECOMMENDATION_ID
@@ -489,11 +505,11 @@ REVOKE UPDATE ON TABLE OPSMIND.AI.RECOMMENDATIONS
 -- ============================================================
 
 GRANT USAGE ON PROCEDURE OPSMIND.GOVERNANCE.APPROVE_RECOMMENDATION(
-    VARCHAR, VARCHAR, VARCHAR
+    VARCHAR, VARCHAR, VARCHAR, VARCHAR
 ) TO ROLE OPSMIND_OPERATOR;
 
 GRANT USAGE ON PROCEDURE OPSMIND.GOVERNANCE.EXECUTE_APPROVED_ACTION(
-    VARCHAR, VARCHAR, VARCHAR, VARCHAR
+    VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR
 ) TO ROLE OPSMIND_OPERATOR;
 
 -- ============================================================
