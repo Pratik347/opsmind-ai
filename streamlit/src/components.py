@@ -4,6 +4,32 @@ import streamlit as st
 import pandas as pd
 
 
+# -- Actor display formatting ----------------------------------------------
+# Presentation-only mapping from Snowflake login identifiers to
+# human-friendly names. The underlying audit/governance data is NEVER
+# modified. Unknown actors pass through unchanged. System identities
+# (e.g. "OpsMind AI System") are left as-is.
+
+_ACTOR_DISPLAY_NAMES = {
+    "PRATIKPRITAM347": "Pratik Pritam",
+}
+
+
+def format_actor(raw_actor: str) -> str:
+    """Return a human-friendly display name for a Snowflake actor."""
+    if not raw_actor or not isinstance(raw_actor, str):
+        return str(raw_actor) if raw_actor else ""
+    return _ACTOR_DISPLAY_NAMES.get(raw_actor.strip(), raw_actor)
+
+
+def format_actor_column(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Apply actor formatting to a column in a DataFrame copy."""
+    if column in df.columns:
+        df = df.copy()
+        df[column] = df[column].apply(format_actor)
+    return df
+
+
 def render_risk_badge(risk_band: str) -> str:
     """Return a colored risk badge as markdown."""
     colors = {
