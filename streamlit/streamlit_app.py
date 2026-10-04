@@ -342,6 +342,11 @@ elif view == "AI Investigator":
     if "_input_version" not in st.session_state:
         st.session_state._input_version = 0
 
+    # Recovery: if processing flag is stuck but no pending question exists, clear it.
+    # This handles interrupted runs (e.g. user navigated away mid-agent-call).
+    if st.session_state.get("_processing") and "_pending_agent_question" not in st.session_state:
+        st.session_state.pop("_processing", None)
+
     # Suggested questions
     st.markdown("**Suggested investigations:**")
     suggestions = [
@@ -399,25 +404,30 @@ elif view == "AI Investigator":
     if "_pending_agent_question" in st.session_state:
         pending_q = st.session_state.pop("_pending_agent_question")
 
-        with st.spinner("Investigating..."):
-            response = call_agent(
-                session, pending_q,
-                thread_id=st.session_state.agent_thread_id,
-                parent_message_id=st.session_state.agent_parent_msg_id,
-            )
+        try:
+            with st.spinner("Investigating..."):
+                response = call_agent(
+                    session, pending_q,
+                    thread_id=st.session_state.agent_thread_id,
+                    parent_message_id=st.session_state.agent_parent_msg_id,
+                )
 
-            # Capture thread state for multi-turn context
-            tid, amid = get_thread_info(response)
-            if tid is not None:
-                st.session_state.agent_thread_id = tid
-            if amid is not None:
-                st.session_state.agent_parent_msg_id = amid
+                # Capture thread state for multi-turn context
+                tid, amid = get_thread_info(response)
+                if tid is not None:
+                    st.session_state.agent_thread_id = tid
+                if amid is not None:
+                    st.session_state.agent_parent_msg_id = amid
 
-            text = extract_text_blocks(response)
+                text = extract_text_blocks(response)
 
-            warnings = response.get("warnings", [])
-            if warnings:
-                st.warning("The investigation completed with warnings. Results may be partial.")
+                warnings = response.get("warnings", [])
+                if warnings:
+                    st.warning("The investigation completed with warnings. Results may be partial.")
+        except Exception:
+            st.session_state.pop("_processing", None)
+            st.error("Investigation failed. Please try again.")
+            st.stop()
 
         st.session_state.agent_messages.append({"role": "assistant", "content": text})
         safe_rerun()
