@@ -3,6 +3,11 @@
 Invokes DATA_AGENT_RUN via SQL and parses the response. Thinking
 blocks are silently skipped — only text, tool_use, and tool_result
 blocks are rendered.
+
+Multi-turn context uses Snowflake Cortex Agent threads. The first call
+creates a thread (create_thread=TRUE). The response metadata returns
+thread_id and assistant_message_id. Subsequent calls pass these as
+thread_id and parent_message_id with create_thread=FALSE.
 """
 
 import json
@@ -61,6 +66,14 @@ def call_agent(session, question: str, thread_id: int = None, parent_message_id:
         return {"error": "agent_unavailable"}
 
 
+def get_thread_info(response: dict) -> tuple:
+    """Extract thread_id and assistant_message_id from response metadata."""
+    metadata = response.get("metadata", {})
+    thread_id = metadata.get("thread_id")
+    assistant_msg_id = metadata.get("assistant_message_id")
+    return thread_id, assistant_msg_id
+
+
 def extract_text_blocks(response: dict) -> str:
     """Extract displayable text from agent response.
 
@@ -97,11 +110,3 @@ def extract_text_blocks(response: dict) -> str:
                         parts.append(f"\n*Query executed ({num_rows} rows)*\n```sql\n{sql}\n```")
 
     return "\n\n".join(parts) if parts else "No response content."
-
-
-def get_thread_info(response: dict) -> tuple:
-    """Extract thread_id and message_id from response metadata."""
-    metadata = response.get("metadata", {})
-    thread_id = metadata.get("thread_id")
-    message_id = metadata.get("message_id")
-    return thread_id, message_id
