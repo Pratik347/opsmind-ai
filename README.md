@@ -203,7 +203,7 @@ Security is a core part of the design.
 - **Human authority:** approval requires explicit user action and justification.
 - **Execution:** only approved actions can pass through owner-rights procedures.
 - **Authenticated actor:** Streamlit passes the authenticated viewer identity into governed procedures.
-- **Least privilege:** effective grants were validated with secondary roles disabled.
+- **Least-privilege application runtime:** the Streamlit command center is owned by and executes under the dedicated `OPSMIND_STREAMLIT` role rather than ACCOUNTADMIN. Required access is explicitly granted for operational reads, Cortex Agent/Search, semantic views, and governed procedures. Authorization was validated with secondary roles disabled, so effective access is tested without inherited secondary-role privileges.
 - **Audit preservation:** historical records are retained rather than rewritten to make a demo look cleaner.
 
 ## Data Model

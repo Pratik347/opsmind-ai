@@ -53,6 +53,36 @@ Verify:
 
 If owner is not OPSMIND_STREAMLIT, flag as FAIL — the Streamlit runs with owner's rights, so ACCOUNTADMIN ownership is a security violation.
 
+#### Step 2b: Streamlit Version State
+
+The object and a committed version existing is NOT sufficient. A LIVE version must also exist.
+
+```sql
+SHOW VERSIONS IN STREAMLIT OPSMIND.APP.OPSMIND_COMMAND_CENTER;
+-- Expect: one row with is_last = true (committed LAST, e.g. VERSION$N)
+--         one row with is_live = true (LIVE)
+
+DESCRIBE STREAMLIT OPSMIND.APP.OPSMIND_COMMAND_CENTER;
+-- Expect: last_version_name set, live_version_location_uri NOT NULL
+
+-- Compare LIVE against LAST (substitute last_version_name, lowercased)
+LIST 'snow://streamlit/OPSMIND.APP.OPSMIND_COMMAND_CENTER/versions/live/';
+LIST 'snow://streamlit/OPSMIND.APP.OPSMIND_COMMAND_CENTER/versions/version$N/';
+```
+
+Verify:
+- A committed LAST version exists — otherwise FAIL
+- A LIVE version exists (`live_version_location_uri` not NULL) — otherwise **FAIL**: authenticated non-owner viewers may be unable to launch the app
+- LIVE matches LAST: same file names, sizes, and md5 values. If they differ, WARN — LIVE contains uncommitted changes or was created from another version
+
+Lifecycle reference (do not run during validation — deployment steps only):
+1. Source changes are applied to LIVE (e.g. `COPY FILES INTO '<live_version_location_uri>' ...`).
+2. `ALTER STREAMLIT OPSMIND.APP.OPSMIND_COMMAND_CENTER COMMIT;` creates the next committed LAST version.
+3. On this deployment, COMMIT was observed to remove LIVE. This may not hold on every account or release, so always check rather than assume.
+4. If LIVE is missing after COMMIT, finalize with:
+   `ALTER STREAMLIT OPSMIND.APP.OPSMIND_COMMAND_CENTER ADD LIVE VERSION FROM LAST;`
+5. Re-run this step after any COMMIT to confirm LIVE exists and matches LAST.
+
 ### Step 3: Semantic View
 
 ```sql
@@ -151,6 +181,7 @@ A deployment health report:
 |-------|--------|--------|
 | Core objects | PASS/FAIL | ... |
 | Streamlit (owner=OPSMIND_STREAMLIT) | PASS/FAIL | ... |
+| Streamlit version state (LAST + LIVE) | PASS/WARN/FAIL | ... |
 | Semantic View | PASS/FAIL | ... |
 | Cortex Search | PASS/FAIL | ... |
 | Cortex Agent | PASS/FAIL | ... |
