@@ -448,6 +448,18 @@ elif view == "Decision Center":
     st.title("Decision Center")
     st.caption("Governed recommendation approval and execution workflow")
 
+    # Recover from an interrupted run: a blocking procedure call cut short by
+    # navigation leaves _processing=True with no pending action to consume.
+    if st.session_state.get("_processing") and "_pending_governance_action" not in st.session_state:
+        st.session_state.pop("_processing", None)
+    # A pending action is only valid alongside _processing (Stage 1 sets both).
+    # If _processing was cleared elsewhere, the pending action is stale.
+    if "_pending_governance_action" in st.session_state and not st.session_state.get("_processing"):
+        st.session_state.pop("_pending_governance_action", None)
+
+    # Status area for Stage 2 output, rendered above the tabs
+    governance_status = st.container()
+
     tab_pending, tab_execute, tab_all = st.tabs(["Pending Approval", "Ready to Execute", "All Recommendations"])
 
     with tab_pending:
@@ -474,17 +486,14 @@ elif view == "Decision Center":
                         if not justification_approve.strip():
                             st.error("Justification required.")
                         else:
+                            # Stage 1: queue the action and rerun so controls render disabled
+                            st.session_state._pending_governance_action = {
+                                "operation": "approve",
+                                "entity_id": rec_id,
+                                "justification": justification_approve,
+                            }
                             st.session_state._processing = True
-                            try:
-                                session.sql(
-                                    "CALL OPSMIND.GOVERNANCE.APPROVE_RECOMMENDATION(?, ?, ?, ?)",
-                                    params=[rec_id, "approved", justification_approve, _viewer_user]
-                                ).collect()
-                                st.success(f"{rec_id} approved.")
-                                safe_rerun()
-                            except Exception:
-                                st.session_state.pop("_processing", None)
-                                st.error("Unable to approve this recommendation. Please retry or contact the OpsMind administrator.")
+                            st.rerun()
 
                 with col_reject:
                     justification_reject = st.text_input(
@@ -495,17 +504,14 @@ elif view == "Decision Center":
                         if not justification_reject.strip():
                             st.error("Justification required.")
                         else:
+                            # Stage 1: queue the action and rerun so controls render disabled
+                            st.session_state._pending_governance_action = {
+                                "operation": "reject",
+                                "entity_id": rec_id,
+                                "justification": justification_reject,
+                            }
                             st.session_state._processing = True
-                            try:
-                                session.sql(
-                                    "CALL OPSMIND.GOVERNANCE.APPROVE_RECOMMENDATION(?, ?, ?, ?)",
-                                    params=[rec_id, "rejected", justification_reject, _viewer_user]
-                                ).collect()
-                                st.success(f"{rec_id} rejected.")
-                                safe_rerun()
-                            except Exception:
-                                st.session_state.pop("_processing", None)
-                                st.error("Unable to reject this recommendation. Please retry or contact the OpsMind administrator.")
+                            st.rerun()
 
                 st.divider()
 
@@ -550,17 +556,16 @@ elif view == "Decision Center":
                         if not action_desc.strip():
                             st.error("Action description required.")
                         else:
+                            # Stage 1: queue the action and rerun so controls render disabled
+                            st.session_state._pending_governance_action = {
+                                "operation": "execute",
+                                "entity_id": approval_id,
+                                "rec_id": rec_id,
+                                "action_type": action_type,
+                                "action_desc": action_desc,
+                            }
                             st.session_state._processing = True
-                            try:
-                                session.sql(
-                                    "CALL OPSMIND.GOVERNANCE.EXECUTE_APPROVED_ACTION(?, ?, ?, ?)",
-                                    params=[approval_id, action_type, action_desc, _viewer_user]
-                                ).collect()
-                                st.success(f"Action executed for {rec_id}.")
-                                safe_rerun()
-                            except Exception:
-                                st.session_state.pop("_processing", None)
-                                st.error("Unable to execute this approved action. Please retry or contact the OpsMind administrator.")
+                            st.rerun()
 
                 st.divider()
 
@@ -571,6 +576,61 @@ elif view == "Decision Center":
             st.dataframe(humanize_columns(all_display), use_container_width=True, hide_index=True)
         else:
             st.info("No recommendations.")
+
+    # Stage 2: execute the queued governance action. Runs after all tabs have
+    # rendered, so every action control is already displayed disabled.
+    if "_pending_governance_action" in st.session_state:
+        pending = st.session_state.pop("_pending_governance_action")
+        operation = pending["operation"]
+
+        with governance_status:
+            if operation == "approve":
+                rec_id = pending["entity_id"]
+                try:
+                    with st.spinner(f"Approving {rec_id}..."):
+                        session.sql(
+                            "CALL OPSMIND.GOVERNANCE.APPROVE_RECOMMENDATION(?, ?, ?, ?)",
+                            params=[rec_id, "approved", pending["justification"], _viewer_user]
+                        ).collect()
+                except Exception:
+                    st.session_state.pop("_processing", None)
+                    st.error("Unable to approve this recommendation. Please retry or contact the OpsMind administrator.")
+                    st.stop()
+                st.success(f"{rec_id} approved.")
+                safe_rerun()
+
+            elif operation == "reject":
+                rec_id = pending["entity_id"]
+                try:
+                    with st.spinner(f"Rejecting {rec_id}..."):
+                        session.sql(
+                            "CALL OPSMIND.GOVERNANCE.APPROVE_RECOMMENDATION(?, ?, ?, ?)",
+                            params=[rec_id, "rejected", pending["justification"], _viewer_user]
+                        ).collect()
+                except Exception:
+                    st.session_state.pop("_processing", None)
+                    st.error("Unable to reject this recommendation. Please retry or contact the OpsMind administrator.")
+                    st.stop()
+                st.success(f"{rec_id} rejected.")
+                safe_rerun()
+
+            elif operation == "execute":
+                approval_id = pending["entity_id"]
+                try:
+                    with st.spinner(f"Executing {approval_id}..."):
+                        session.sql(
+                            "CALL OPSMIND.GOVERNANCE.EXECUTE_APPROVED_ACTION(?, ?, ?, ?)",
+                            params=[approval_id, pending["action_type"], pending["action_desc"], _viewer_user]
+                        ).collect()
+                except Exception:
+                    st.session_state.pop("_processing", None)
+                    st.error("Unable to execute this approved action. Please retry or contact the OpsMind administrator.")
+                    st.stop()
+                st.success(f"Action executed for {pending['rec_id']}.")
+                safe_rerun()
+
+            else:
+                st.session_state.pop("_processing", None)
 
 
 # =========================================================================
